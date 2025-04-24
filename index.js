@@ -2,15 +2,15 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors"; 
 import { config } from "dotenv";
-import connectDB from "../database/db.js";
-import blogRoute from "../routes/blog.js"
-import xpdBlogRoute from "../routes/xpdBlog.js"
-import xCardBlogRoute from "../routes/xCardBlog.js"
+import connectDB from "./database/db.js";
+import blogRoute from "./routes/blog.js"
+import xpdBlogRoute from "./routes/xpdBlog.js"
+import xCardBlogRoute from "./routes/xCardBlog.js"
 
 
 
 config({
-    path: "../.env",
+    path: "./.env",
   });
 
   const mongoUri=process.env.MONGO_URI
