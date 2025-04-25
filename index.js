@@ -15,7 +15,7 @@ config({
 
   const mongoUri=process.env.MONGO_URI
   const PORT = process.env.PORT;
-
+// console.log(mongoUri)
 connectDB(mongoUri)
 const app=express();
 
