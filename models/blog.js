@@ -7,8 +7,11 @@ const schema = mongoose.Schema({
         type:String,
         required:[true,"Please enter a heading"],
     },
-    content:{
+    slug:{
         type:String,
+    },
+    content:{
+        type:Object,
         required:[true,"Please enter content or paragraph"],
     }
 },{
@@ -16,3 +19,4 @@ const schema = mongoose.Schema({
 });
 
 export const Blog=mongoose.model("Blog",schema);
+
