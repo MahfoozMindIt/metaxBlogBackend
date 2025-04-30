@@ -1,5 +1,4 @@
 import { Blog } from "../models/blog.js";
-import { rm } from "fs";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
@@ -81,6 +80,19 @@ export const getSingleBlog=async (req, res, next) => {
     }
 }
 
+const extractImageUrls = (content) => {
+  const urls = [];
+  if (!content?.blocks) return urls;
+
+  content.blocks.forEach((block) => {
+    if (block.type === "image" && block.data?.file?.url) {
+      urls.push(block.data.file.url);
+    }
+  });
+
+  return urls;
+};
+
 export const deleteBlog=async (req, res, next) => {
     
     const { id } = req.params;
@@ -88,9 +100,33 @@ export const deleteBlog=async (req, res, next) => {
     
     let blog = await Blog.findById(id);
     if (!blog) return next(new ErrorHandler("Product was not found", 404));
-    rm(blog.photo, () => {
-      console.log(" Product Photo Deleted");
-    });
+    const photoPath = path.join("uploads", path.basename(blog.photo));
+    if (fs.existsSync(photoPath)) {
+      fs.unlink(photoPath, (err) => {
+        if (err) console.error("Error deleting photo:", err);
+        else console.log("Product Photo Deleted");
+      });
+    } else {
+      console.log("Photo not found:", photoPath);
+    }
+
+    const content = typeof blog.content === "string" ? JSON.parse(blog.content) : blog.content;
+  const contentImages = extractImageUrls(content);
+
+  contentImages.forEach((url) => {
+    const filename = path.basename(url);
+    const filePath = path.join("uploads", filename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlink(filePath, (err) => {
+        if (err) console.error(`Error deleting embedded image ${filename}:`, err);
+        else console.log(`Embedded image ${filename} deleted`);
+      });
+    } else {
+      console.log(`Embedded image not found: ${filePath}`);
+    }
+  });
+
    await Blog.deleteOne(blog);
   return res.status(200).json({
     success: true,
@@ -119,18 +155,7 @@ export const cleanupImages = (req, res) => {
 
 
 
-  const extractImageUrls = (content) => {
-    const urls = [];
-    if (!content?.blocks) return urls;
-  
-    content.blocks.forEach((block) => {
-      if (block.type === "image" && block.data?.file?.url) {
-        urls.push(block.data.file.url);
-      }
-    });
-  
-    return urls;
-  };
+ 
   
 
   export const updateBlog = async (req, res) => {
@@ -150,7 +175,7 @@ export const cleanupImages = (req, res) => {
         if (existingBlog) {
           return res.status(400).json({ success: false, message: "Blog with this title already exists" });
         }
-        blog.slug = slug; // ✅ now blog is defined
+        blog.slug = slug; 
       }
   
       const newTitle = req.body.title;
@@ -176,9 +201,12 @@ export const cleanupImages = (req, res) => {
       blog.content = JSON.stringify(newContent);
   
       if (req.file) {
-        // delete old photo if it exists
-        if (blog.photo && fs.existsSync(blog.photo)) {
-          fs.unlinkSync(blog.photo);
+      
+        const oldPhotoPath = path.join("uploads", path.basename(blog.photo));
+  
+        if (fs.existsSync(oldPhotoPath)) {
+          fs.unlinkSync(oldPhotoPath);
+          console.log("Old blog photo deleted");
         }
   
         blog.photo = `/uploads/${req.file.filename}`; 
